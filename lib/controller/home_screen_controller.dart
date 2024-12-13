@@ -1,60 +1,63 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shopping_cart_may/app_config.dart';
-
 import 'package:shopping_cart_may/model/product_model.dart';
 
 class HomeScreenController with ChangeNotifier {
-  List categories = ['All'];
-  bool isloading=false;
-  bool productLoading=false;
-  int selectedindex=0;
-  List <ProductModel>  products=[];
+  bool isLoading = false;
+  bool isProductsLoading = false;
+  List categories = [];
+  int selectedCategoryIndex = 0;
+  List<ProductModel> productsList = [];
 
-
-  Future<void> allcategories() async {
-    final url = Uri.parse(AppConfig.baseUrl+'products/categories');
-    try {isloading=true;
+//fetch categories form api
+  Future<void> getCategories() async {
+    final url = Uri.parse(AppConfig.baseUrl + "products/categories");
+    try {
+      isLoading = true;
+      notifyListeners();
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        categories=jsonDecode(response.body);
-        categories.insert(0, 'All');//for adding extra catogory all
+        categories = jsonDecode(response.body);
+        categories.insert(0, "all"); // TO ADD "ALL" CATEGORY TO CATEGORY LIST
+      }
+    } catch (e) {
+      print(e);
     }
-
-    } catch (e) {}isloading=false;notifyListeners();
+    isLoading = false;
+    notifyListeners();
   }
 
-  Future<void> getproducts({String?category}) async {
-    String endpointurl=category==null?'products':'/products/$category';
-
-
-    final url=Uri.parse(AppConfig.baseUrl+endpointurl);
-  
-    try{productLoading=true;
+// for fetching all products and product by category
+  Future<void> getProducts({String? category}) async {
+    String endpinturl =
+        category == null ? "products" : "products/category/$category";
+    final url = Uri.parse(AppConfig.baseUrl + endpinturl);
+    log(url.toString());
+    try {
+      isProductsLoading = true;
+      notifyListeners();
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        productsList = productModelFromJson(response.body);
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+    isProductsLoading = false;
     notifyListeners();
- 
-  final response = await http.get(url);
-  if(response.statusCode==200){
-     products=productModelFromJson(response.body);
-   
-    
-  }else{log('api failed${response.body}');}
-    }catch(e){}
-    productLoading=false;
-    notifyListeners();
-
   }
-  onCAtogoryselection({required int clickedindex}){
-    selectedindex=clickedindex;
-    getproducts(category: selectedindex==0?null:categories[selectedindex]);
-      
-    
-    notifyListeners();
-  
 
+  void onCategorySelection({required int clickedIndex}) {
+    selectedCategoryIndex = clickedIndex;
+    print(selectedCategoryIndex);
+    getProducts(
+        category: selectedCategoryIndex == 0
+            ? null
+            : categories[selectedCategoryIndex]);
+    notifyListeners();
   }
 }
